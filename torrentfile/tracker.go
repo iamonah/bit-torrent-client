@@ -45,7 +45,7 @@ func (t *TorrentFile) buildTrackerUrl(peerID [20]byte, port uint16) (string, err
 	return base.String(), nil
 }
 
-func (t *TorrentFile) requestPeers(peerID [20]byte, port uint16) ([]*peers.Peer, error) {
+func (t *TorrentFile) requestPeersFromTrackers(peerID [20]byte, port uint16) ([]*peers.Peer, error) {
 	url, err := t.buildTrackerUrl(peerID, port)
 	if err != nil {
 		return nil, err
