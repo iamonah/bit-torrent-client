@@ -102,6 +102,7 @@ func Read(r io.Reader) (*Message, error) {
 	return &msg, nil
 }
 
+//remember that the length of payload is not path of the payload
 func ParsePiece(index int, buf []byte, msg *Message) (int, error) {
 	if msg.ID != MsgPiece {
 		return 0, fmt.Errorf("expected piece (id %d), got id %d", MsgPiece, msg.ID)
@@ -109,7 +110,7 @@ func ParsePiece(index int, buf []byte, msg *Message) (int, error) {
 	if len(msg.Payload) < 8 {
 		return 0, fmt.Errorf("payload too short. %d < 8", len(msg.Payload))
 	}
-	parsedIndex := int(binary.BigEndian.Uint32(msg.Payload[0:4]))
+	parsedIndex := int(binary.BigEndian.Uint32(msg.Payload[0:4])) //piece
 	if parsedIndex != index {
 		return 0, fmt.Errorf("expected index %d, got %d", index, parsedIndex)
 	}

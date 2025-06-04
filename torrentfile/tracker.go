@@ -2,14 +2,19 @@ package torrentfile
 
 import (
 	"context"
+	"crypto/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/jackpal/bencode-go"
+	"github.com/onahvictor/torrent-client/p2p"
 	"github.com/onahvictor/torrent-client/peers"
 )
+
+const Port uint16 = 6881
 
 type trackerResponse struct {
 	Interval int    `bencode:"interval"`
@@ -26,6 +31,44 @@ type TorrentFile struct {
 	Name         string
 }
 
+func (t *TorrentFile) DownlaodFile(path string) error {
+	var peerID [20]byte
+	_, err := rand.Read(peerID[:])
+	if err != nil {
+		return err
+	}
+
+	peers, err := t.requestPeersFromTrackers(peerID, Port)
+	if err != nil {
+		return err
+	}
+
+	torrent := p2p.Torrent{
+		Peers:       peers,
+		PeerID:      peerID,
+		InfoHash:    t.InfoHash,
+		PieceHashes: t.PiecesHashes,
+		PieceLength: t.PieceLength,
+		Length:      t.Length,
+		Name:        t.Name,
+	}
+	buf, err := torrent.Download()
+	if err != nil {
+		return err
+	}
+
+	outFile, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+	_, err = outFile.Write(buf)
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
 func (t *TorrentFile) buildTrackerUrl(peerID [20]byte, port uint16) (string, error) {
 	base, err := url.Parse(t.Announce)
 	if err != nil {
@@ -45,7 +88,7 @@ func (t *TorrentFile) buildTrackerUrl(peerID [20]byte, port uint16) (string, err
 	return base.String(), nil
 }
 
-func (t *TorrentFile) requestPeersFromTrackers(peerID [20]byte, port uint16) ([]*peers.Peer, error) {
+func (t *TorrentFile) requestPeersFromTrackers(peerID [20]byte, port uint16) ([]peers.Peer, error) {
 	url, err := t.buildTrackerUrl(peerID, port)
 	if err != nil {
 		return nil, err

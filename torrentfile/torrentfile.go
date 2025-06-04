@@ -9,7 +9,6 @@ import (
 	"github.com/jackpal/bencode-go"
 )
 
-
 type bencodeTorrent struct {
 	Announce string       `bencode:"announce"`
 	Info     bencodedInfo `bencode:"info"`
@@ -58,29 +57,29 @@ func (i *bencodedInfo) splitPieceHashes() ([][20]byte, error) {
 }
 
 // torrent file is bencoded
-func Open(path string) (*bencodeTorrent, error) {
+func Open(path string) (TorrentFile, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return TorrentFile{}, err
 	}
 	defer file.Close()
 
-	torrentInfo := bencodeTorrent{}
-	err = bencode.Unmarshal(file, &torrentInfo)
+	bto := bencodeTorrent{}
+	err = bencode.Unmarshal(file, &bto)
 	if err != nil {
-		return nil, err
+		return TorrentFile{}, err
 	}
-	return &torrentInfo, nil
+	return bto.toTorrentFile()
 }
 
-func (bto *bencodeTorrent) toTorrentFile() (*TorrentFile, error) {
+func (bto *bencodeTorrent) toTorrentFile() (TorrentFile, error) {
 	infoHash, err := bto.Info.hash()
 	if err != nil {
-		return nil, err
+		return TorrentFile{}, err
 	}
 	hash, err := bto.Info.splitPieceHashes()
 	if err != nil {
-		return nil, err
+		return TorrentFile{}, err
 	}
 	t := TorrentFile{
 		Announce:     bto.Announce,
@@ -90,5 +89,5 @@ func (bto *bencodeTorrent) toTorrentFile() (*TorrentFile, error) {
 		Length:       bto.Info.Length,
 		PiecesHashes: hash,
 	}
-	return &t, nil
+	return t, nil
 }
