@@ -1,25 +1,22 @@
-## 🧩 BitTorrent Client in Go
+## 🧩 BitTorrent Client (Go)
 
 ### Overview
 
-This project is a **minimal BitTorrent client** implemented in **Go**.
-It demonstrates how peer-to-peer (P2P) communication works in the BitTorrent protocol — including connecting to trackers, parsing torrent metadata, establishing peer handshakes, and downloading file pieces from multiple peers concurrently.
+This project is a **lightweight BitTorrent client** implemented in **Go**.
+It can download files from peers using a `.torrent` file — demonstrating how the BitTorrent protocol works under the hood: parsing torrent metadata, connecting to peers, and downloading verified pieces.
 
-The goal is to provide a clear, well-structured implementation of BitTorrent fundamentals rather than a fully featured production client.
+The goal is educational clarity and simplicity rather than a full-featured production client.
 
 ---
 
 ### ✨ Features
 
-* 🧱 **Torrent file parsing** (`.torrent` files)
-* 🌐 **Tracker communication** via HTTP/UDP
-* 🔗 **Peer discovery and handshake**
-* 📦 **Piece downloading and verification (SHA-1)**
-* ⚡ **Concurrent downloading from multiple peers**
-* 🧠 **Piece selection strategy** (e.g., rarest-first)
-* 🧾 **Resume and integrity check support (optional)**
-* 🧰 Clean, idiomatic Go structure (service, transport, etc.)
-
+* Parses `.torrent` files
+* Connects to peers discovered via tracker
+* Downloads file pieces concurrently
+* Verifies each piece using SHA-1 hashes
+* Assembles the complete file from verified pieces
+* Simple, minimal entry point with no CLI flags
 
 ### 🚀 Getting Started
 
@@ -27,104 +24,86 @@ The goal is to provide a clear, well-structured implementation of BitTorrent fun
 
 * Go **1.23+**
 * Internet connection
-* A `.torrent` file (for testing)
+* A valid `.torrent` file
 
-#### 2. Clone the repository
+#### 2. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/bittorrent-client.git
-cd bittorrent-client
+git clone https://github.com/onahvictor/torrent-client.git
+cd torrent-client
 ```
 
-#### 3. Build
+#### 3. Build the Binary
 
 ```bash
-go build -o bittorrent cmd/main.go
+go build -o torrent-client ./cmd
 ```
 
-#### 4. Run
+#### 4. Run the Client
+
+The client takes **two arguments**:
+
+1. Path to the `.torrent` file
+2. Output directory for the downloaded file
+
+Example:
 
 ```bash
-./bittorrent -torrent testdata/ubuntu.torrent -output ./downloads
+./torrent-client ./testdata/example.torrent ./downloads
 ```
 
 ---
 
-### ⚙️ Configuration Flags
+### ⚙️ How It Works
 
-| Flag         | Description                        | Example                          |
-| ------------ | ---------------------------------- | -------------------------------- |
-| `-torrent`   | Path to the `.torrent` file        | `-torrent testdata/file.torrent` |
-| `-output`    | Directory to save downloaded files | `-output ./downloads`            |
-| `-max-peers` | Limit number of peers              | `-max-peers 50`                  |
-| `-debug`     | Enable verbose logging             | `-debug`                         |
+1. **Open the torrent file**
+
+   * Reads and parses the `.torrent` metadata (announce URL, info hash, piece hashes, etc.).
+2. **Announce to tracker**
+
+   * Contacts the tracker to get a list of available peers.
+3. **Handshake with peers**
+
+   * Performs the BitTorrent handshake to confirm they share the same torrent.
+4. **Download pieces**
+
+   * Requests and downloads file pieces concurrently from multiple peers.
+5. **Verify and assemble**
+
+   * Verifies each piece using SHA-1 hash and assembles the final file once all pieces are complete.
 
 ---
 
-### 📡 How It Works
+### 📦 Example Output
 
-1. **Parse `.torrent` file**
-
-   * Extracts `announce`, `info hash`, `piece length`, and `pieces`.
-
-2. **Connect to Tracker**
-
-   * Announces the client’s presence and retrieves a list of peers.
-
-3. **Peer Handshake**
-
-   * Performs the BitTorrent handshake to verify shared torrent info.
-
-4. **Message Exchange**
-
-   * Exchanges standard messages (`interested`, `request`, `piece`, etc.) between peers.
-
-5. **Piece Download & Verification**
-
-   * Downloads file pieces concurrently.
-   * Verifies SHA-1 hash for each piece.
-
-6. **Assemble Final File**
-
-   * Merges pieces into the target file once all pieces are verified.
+```text
+Opening torrent file: example.torrent
+Connecting to tracker...
+Found 8 peers
+Downloading piece 4/256
+Piece 4 verified ✅
+Download complete: ./downloads/example.iso
+```
 
 ---
 
 ### 🧠 Key Concepts
 
-* **Info Hash** → Unique identifier for a torrent file.
-* **Tracker** → Coordinates peers sharing the same torrent.
-* **Peer** → Another client in the swarm that uploads/downloads pieces.
-* **Piece** → A fixed-size chunk of the file(s) being shared.
-* **Swarm** → All peers connected via the same torrent.
+| Concept          | Description                                                       |
+| ---------------- | ----------------------------------------------------------------- |
+| **Torrent file** | A metadata file describing the files and trackers for the torrent |
+| **Tracker**      | A server that helps peers discover each other                     |
+| **Peer**         | Another client sharing the same torrent                           |
+| **Piece**        | A fixed-size chunk of the full file                               |
+| **Info hash**    | Unique identifier for the torrent content                         |
 
 ---
 
-### 🧩 Example Output
+### 🧩 Future Improvements
 
-```text
-[INFO] Connecting to tracker: http://tracker.example.com:8080/announce
-[INFO] Found 12 peers
-[INFO] Downloading piece 3/248 (1.2%)
-[INFO] Verified piece 3 ✅
-[INFO] Download complete! File saved to ./downloads/
-```
-
----
-
-### 🔒 Notes
-
-* This implementation follows **BitTorrent v1** specification (BEP 3).
-* For simplicity, **DHT**, **magnet links**, and **PEX** are not yet implemented.
-* For educational use — not intended for copyrighted materials.
-
----
-
-### 🧰 Future Enhancements
-
-* Support for **DHT** and **magnet URIs**
-* Implement **uploading (seeding)** mode
-* Add **rate limiting** and **choke/unchoke** strategy
-* Support for **multi-file torrents**
-* Improve **resumable downloads**
+* Add support for **flags** (e.g., `-torrent`, `-out`)
+* Add **DHT** and **magnet link** support
+* Implement **upload (seeding)**
+* Handle **multi-file torrents**
+* Improve download progress display
 
